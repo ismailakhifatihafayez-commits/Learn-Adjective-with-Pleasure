@@ -170,15 +170,25 @@ If you are publishing this project to your GitHub account:
 
 ---
 
-## 🚀 Instant Deployment to GitHub Pages
+## 🚀 Instant Deployment to GitHub Pages (2 Methods)
 
-This repository is pre-configured with **relative asset bundling (`base: './'`)**, **`.nojekyll`**, and an automated **GitHub Actions deployment workflow (`.github/workflows/deploy-pages.yml`)**:
+### Method 1: Instant 1-Click via `/docs` (Easiest & Most Reliable — Zero Build Required!)
+The compiled production bundle is committed directly into the `/docs` folder with `.nojekyll`, relative asset paths, and SPA fallback:
 
-1. Push this repository to GitHub.
-2. In your repository on GitHub, navigate to **Settings** > **Pages** (in the left sidebar).
-3. Under **Build and deployment** > **Source**, select **GitHub Actions**.
-4. That's it! GitHub will run the included workflow and publish your live website at:
+1. Push this repository to your GitHub account (or use AI Studio's **Settings** > **Export to GitHub**).
+2. On GitHub, go to **Settings** > **Pages** (in the left sidebar).
+3. Under **Build and deployment**:
+   - **Source**: Select **Deploy from a branch**
+   - **Branch**: Select **`main`** (or `master`) and change the folder dropdown from `/ (root)` to **`/docs`**.
+4. Click **Save**! Your site is live immediately at:
    `https://<your-username>.github.io/<your-repo-name>/`
+
+---
+
+### Method 2: Automated GitHub Actions
+If you prefer building from source on every push:
+1. In **Settings** > **Pages**, set **Source** to **GitHub Actions**.
+2. GitHub will automatically execute `.github/workflows/deploy-pages.yml` using Node 20 and publish `./dist`.
 
 ---
 
