@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Adjective Learning & Quiz Platform</title>
     <script type="text/javascript">
-      // GitHub Pages SPA redirect
-      var pathSegmentsToKeep = 1;
+      // GitHub Pages SPA redirect: handles both custom domains and repo subpaths
       var l = window.location;
-      var repoPath = l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/');
-      // Redirect back to base with path as hash or root
+      var pathSegments = l.pathname.split('/').filter(Boolean);
+      // If deployed at username.github.io/repo-name/, keep repo name
+      var isGitHubDomain = l.hostname.endsWith('github.io');
+      var basePath = isGitHubDomain && pathSegments.length > 0 ? '/' + pathSegments[0] + '/' : '/';
       window.location.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        repoPath + '/'
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') + basePath
       );
     </script>
   </head>
   <body>
-    <p>Redirecting to Adjective Learning Platform...</p>
+    <p style="font-family: sans-serif; text-align: center; margin-top: 20vh; color: #4a00e0;">
+      Loading Adjective Learning Platform...
+    </p>
   </body>
 </html>
