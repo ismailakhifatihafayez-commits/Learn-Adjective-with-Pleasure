@@ -1,6 +1,8 @@
 {
   "name": "Adjective Learning & Quiz Platform",
   "description": "An interactive adjective learning and quiz platform with 1,260 words, 3D interactive flashcards, milestone badges and virtual medals, real-time search, pronunciation audio, timed quiz mode, and confetti celebrations.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "microphone"
+  ],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

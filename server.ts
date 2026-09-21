@@ -144,6 +144,118 @@ Recommend 4 to 6 of the most fitting, elegant, and practical English adjectives 
     }
   });
 
+  // AI Tutor Chat endpoint
+  app.post("/api/ai-tutor-chat", async (req, res) => {
+    const { message, contextAdjective, history } = req.body;
+    if (!message || typeof message !== "string" || !message.trim()) {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    const cleanMessage = message.trim();
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    // Helper to generate an intelligent local response if Gemini is unavailable or quota exceeded
+    const generateLocalFallbackAnswer = () => {
+      const msgLower = cleanMessage.toLowerCase();
+      const targetWord = contextAdjective?.english || "adjective";
+      const targetBangla = contextAdjective?.bangla || "";
+
+      if (msgLower.includes("example") || msgLower.includes("sentence")) {
+        return `Here are natural example sentences for **${targetWord}**${targetBangla ? ` (${targetBangla})` : ""}:\n\n` +
+          `1. **Simple Usage:** "She felt very **${targetWord}** after achieving her goal."\n` +
+          `   *(সে তার লক্ষ্য অর্জনের পর খুবই ${targetBangla || 'উৎসাহিত'} অনুভব করেছিল।)*\n\n` +
+          `2. **In Writing:** "The **${targetWord}** atmosphere inspired everyone present."\n` +
+          `   *(সেখানকার পরিবেশ সবাইকে অনুপ্রাণিত করেছিল।)*\n\n` +
+          `3. **Conversational:** "It was quite a **${targetWord}** experience for our entire team."\n` +
+          `   *(এটি আমাদের পুরো দলের জন্য দারুণ এক অভিজ্ঞতা ছিল।)*\n\n` +
+          `💡 *Grammar Tip:* Notice how **${targetWord}** can be used both attributively (before a noun: "*${targetWord} atmosphere*") and predicatively (after a linking verb: "*felt ${targetWord}*").`;
+      }
+
+      if (msgLower.includes("order") || msgLower.includes("grammar") || msgLower.includes("rule")) {
+        return `### 📚 Standard Order of Adjectives in English (OSASCOMP Rule):\n\n` +
+          `When using multiple adjectives together before a noun, follow this natural sequence:\n\n` +
+          `1. **Opinion:** *lovely, beautiful, smart, difficult*\n` +
+          `2. **Size:** *big, small, tall, tiny*\n` +
+          `3. **Age:** *new, young, antique, old*\n` +
+          `4. **Shape:** *round, square, circular*\n` +
+          `5. **Color:** *red, blue, dark, pale*\n` +
+          `6. **Origin:** *Bangladeshi, British, Italian*\n` +
+          `7. **Material:** *wooden, golden, silk, cotton*\n` +
+          `8. **Purpose:** *sleeping (bag), running (shoes)*\n\n` +
+          `✨ **Example:** *"A **beautiful** (opinion) **little** (size) **wooden** (material) box."*\n` +
+          `*(একটি সুন্দর ছোট কাঠের বাক্স।)*`;
+      }
+
+      if (msgLower.includes("mnemonic") || msgLower.includes("remember") || msgLower.includes("trick")) {
+        return `### 🧠 Memory Hook for **${targetWord}**:\n\n` +
+          `• **Word:** **${targetWord}**\n` +
+          `• **Bengali Meaning:** **${targetBangla || 'বিশেষণ'}**\n\n` +
+          `💡 **Mnemonic Technique:** Create a vivid mental picture! Connect the sound of "*${targetWord}*" to a memorable scene or familiar person in your life. Use it in 3 self-made sentences today to lock it into your long-term memory!`;
+      }
+
+      return `Hello! As your English Adjective Tutor, I'm glad you asked about **${cleanMessage}**.\n\n` +
+        `• **Adjectives (বিশেষণ)** are words that describe, identify, or quantify a noun or pronoun.\n` +
+        (contextAdjective ? `• **Current Word Context:** **${contextAdjective.english}** (${contextAdjective.bangla}) — *" ${contextAdjective.sentence} "*\n\n` : "\n") +
+        `Would you like to:\n` +
+        `1. See **more example sentences** with Bengali translation?\n` +
+        `2. Check **comparative & superlative degrees** (*positive, comparative, superlative*)?\n` +
+        `3. Learn **synonyms & antonyms** for this word?`;
+    };
+
+    if (!apiKey) {
+      return res.json({
+        reply: generateLocalFallbackAnswer(),
+        source: "offline_fallback",
+        note: "AI Tutor active in offline reference mode."
+      });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+
+      let systemPrompt =
+        "You are an encouraging, highly knowledgeable bilingual English-Bengali Adjective Tutor and Master Trainer of English. " +
+        "You help learners of all levels master English adjectives, their meanings, authentic Bengali script translations (বাংলা অর্থ), " +
+        "correct grammatical order (Opinion → Size → Age → Shape → Color → Origin → Material → Purpose), comparative and superlative forms, " +
+        "common prepositions, and natural everyday examples. Format your responses with neat markdown headings, bullet points, and bold terms.";
+
+      let contextualAddon = "";
+      if (contextAdjective) {
+        contextualAddon = `\n\n[Active Word Context: English: "${contextAdjective.english}", Bengali: "${contextAdjective.bangla}", Example sentence: "${contextAdjective.sentence}", Translation: "${contextAdjective.translation}"]`;
+      }
+
+      const prompt = `${cleanMessage}${contextualAddon}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: systemPrompt,
+        },
+      });
+
+      const replyText = response.text || generateLocalFallbackAnswer();
+      return res.json({
+        reply: replyText,
+        source: "gemini",
+      });
+    } catch (err: any) {
+      console.warn("Gemini AI Tutor chat error, using local tutor fallback:", err?.message);
+      return res.json({
+        reply: generateLocalFallbackAnswer(),
+        source: "offline_fallback",
+        errorNotice: err?.message,
+      });
+    }
+  });
+
   // Vite middleware in development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

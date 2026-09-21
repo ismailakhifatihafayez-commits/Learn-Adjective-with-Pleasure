@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Volume2, Info, ArrowLeft, Search, Play, Square, X, Calendar, Globe, Sparkles, Navigation, Star, Check } from 'lucide-react';
+import { Volume2, Info, ArrowLeft, Search, Play, Square, X, Calendar, Globe, Sparkles, Navigation, Star, Check, Mic, MicOff } from 'lucide-react';
 import { AdjectiveItem, WeekKey, DayKey } from '../types';
 import { adjectivesData, weekMap, dayMap } from '../data/adjectivesData';
 import { playTapSound, playSuccessBeep, speakEnglishText, speakBanglaText, stopSpeaking } from '../utils/speech';
 import { getLearnedIndices, markAdjectiveLearned } from '../utils/badges';
 import { getNoteForWord } from '../utils/notes';
+import { createSpeechRecognizer, isSpeechRecognitionSupported } from '../utils/speechRecognition';
 
 interface PracticeSectionProps {
   onBack: () => void;
@@ -24,6 +25,80 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({
   const [filterQuery, setFilterQuery] = useState('');
   const [searchScope, setSearchScope] = useState<'current' | 'all'>('current');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Voice recognition search state
+  const [isListening, setIsListening] = useState(false);
+  const recognizerRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recognizerRef.current) {
+        try {
+          recognizerRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const handleToggleVoiceSearch = () => {
+    if (!isSpeechRecognitionSupported()) {
+      playTapSound();
+      onToast("Voice recognition is not supported in this browser. Please try Chrome/Edge or type your search.", "danger");
+      return;
+    }
+
+    if (isListening) {
+      playTapSound();
+      try {
+        recognizerRef.current?.stop();
+      } catch {
+        // ignore
+      }
+      setIsListening(false);
+      return;
+    }
+
+    playSuccessBeep();
+    setIsListening(true);
+    onToast("🎤 Listening... Speak an adjective in English (e.g. 'honest', 'resilient', 'kind')", "info");
+
+    const recognizer = createSpeechRecognizer({
+      lang: 'en-US',
+      onStart: () => {
+        setIsListening(true);
+      },
+      onResult: (transcript, isFinal) => {
+        setFilterQuery(transcript);
+        if (isFinal) {
+          setIsListening(false);
+          playSuccessBeep();
+          onToast(`🎤 Voice search: "${transcript}"`, "success");
+        }
+      },
+      onError: (err) => {
+        console.warn("Speech recognition error:", err);
+        setIsListening(false);
+        if (err === 'not-allowed') {
+          onToast("Microphone permission was denied. Please allow microphone access in browser settings.", "danger");
+        } else if (err !== 'no-speech') {
+          onToast(`Speech recognition notice: ${err}`, "info");
+        }
+      },
+      onEnd: () => {
+        setIsListening(false);
+      },
+    });
+
+    recognizerRef.current = recognizer;
+    try {
+      recognizer?.start();
+    } catch (err) {
+      console.warn("Could not start speech recognition:", err);
+      setIsListening(false);
+    }
+  };
   
   // Play All Sequential Speech State
   const [isPlayingAll, setIsPlayingAll] = useState(false);
@@ -346,13 +421,13 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({
                 ? `Type to find in ${dayTitle} (e.g., happy, good, ভালো)...`
                 : 'Type to find across all 1,260 adjectives in English or Bangla...'
             }
-            className="touch-target w-full pl-10 sm:pl-11 pr-24 py-3 text-sm sm:text-base font-medium rounded-xl sm:rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/70 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all shadow-inner"
+            className="touch-target w-full pl-10 sm:pl-11 pr-32 sm:pr-36 py-3 text-sm sm:text-base font-medium rounded-xl sm:rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/70 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all shadow-inner"
             aria-label="Real-time search adjective input"
             autoComplete="off"
             spellCheck="false"
           />
 
-          {/* Right-side Input Controls: Clear button and Match count */}
+          {/* Right-side Input Controls: Clear, Microphone Voice Search, and Match count */}
           <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center gap-1.5">
             {filterQuery && (
               <button
@@ -371,9 +446,35 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({
               </button>
             )}
 
+            {/* Voice Recognition Microphone Button */}
+            <button
+              type="button"
+              id="practice-voice-search-btn"
+              onClick={handleToggleVoiceSearch}
+              className={`touch-target px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                isListening
+                  ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/50'
+                  : 'text-purple-600 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/80 hover:bg-purple-200 dark:hover:bg-purple-900 border border-purple-200 dark:border-purple-800'
+              }`}
+              aria-label={isListening ? "Stop listening voice recognition" : "Search adjectives using microphone voice recognition"}
+              title={isListening ? "Listening... click to stop" : "Voice search using microphone"}
+            >
+              {isListening ? (
+                <>
+                  <MicOff size={15} className="text-white animate-bounce" />
+                  <span className="text-[11px] font-extrabold text-white">Listening</span>
+                </>
+              ) : (
+                <>
+                  <Mic size={15} />
+                  <span className="hidden sm:inline text-[11px]">Voice</span>
+                </>
+              )}
+            </button>
+
             <span 
               id="practice-search-count-badge"
-              className="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 text-xs font-black shadow-xs"
+              className="inline-flex items-center px-2 py-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 text-xs font-black shadow-xs"
               title={`${filteredAdjectives.length} adjectives currently shown`}
             >
               {filteredAdjectives.length}

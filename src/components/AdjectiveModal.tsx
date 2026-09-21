@@ -17,6 +17,7 @@ interface AdjectiveModalProps {
   adjective: AdjectiveItem | null;
   index: number | null;
   onClose: () => void;
+  onAskAITutor?: (adjective: AdjectiveItem) => void;
   isDarkMode: boolean;
 }
 
@@ -24,6 +25,7 @@ export const AdjectiveModal: React.FC<AdjectiveModalProps> = ({
   adjective,
   index,
   onClose,
+  onAskAITutor,
   isDarkMode,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
@@ -358,14 +360,30 @@ export const AdjectiveModal: React.FC<AdjectiveModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 text-right">
+        <div className="p-4 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+          {onAskAITutor && adjective ? (
+            <button
+              type="button"
+              onClick={() => {
+                playSuccessBeep();
+                onAskAITutor(adjective);
+              }}
+              className="touch-target px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <Brain size={16} className="text-amber-300" />
+              <span>Ask AI Tutor</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
           <button
             type="button"
             onClick={() => {
               playTapSound();
               onClose();
             }}
-            className="touch-target px-5 py-2 rounded-xl bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-white font-bold text-sm hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors shadow-sm"
+            className="touch-target px-5 py-2 rounded-xl bg-slate-300 dark:bg-slate-700 text-slate-800 dark:text-white font-bold text-sm hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors shadow-sm cursor-pointer"
             aria-label="Close dialog"
           >
             Close

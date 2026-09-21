@@ -13,6 +13,8 @@ import { SavedResultsSection } from './components/SavedResultsSection';
 import { FloatingNav } from './components/FloatingNav';
 import { AdjectiveModal } from './components/AdjectiveModal';
 import { Celebration } from './components/Celebration';
+import { AISearchSection } from './components/AISearchSection';
+import { AITutor } from './components/AITutor';
 import { adjectivesData } from './data/adjectivesData';
 import { 
   playTapSound, 
@@ -81,6 +83,9 @@ export default function App() {
 
   // Modal details state
   const [modalIndex, setModalIndex] = useState<number | null>(null);
+
+  // AI Tutor drawer state
+  const [isAITutorOpen, setIsAITutorOpen] = useState(false);
 
   // Celebration state
   const [celebrationScore, setCelebrationScore] = useState<number | null>(null);
@@ -480,6 +485,25 @@ export default function App() {
                   />
                 </motion.div>
               )}
+
+              {/* Smart AI Adjective Search View */}
+              {currentView === 'ai-search' && (
+                <motion.div
+                  key="ai-search"
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.22, ease: [0.25, 1, 0.5, 1] }}
+                  className="w-full"
+                >
+                  <AISearchSection
+                    onBack={handleGoMainSections}
+                    onOpenDetails={(idx) => setModalIndex(idx)}
+                    onToast={triggerToast}
+                    isDarkMode={isDarkMode}
+                  />
+                </motion.div>
+              )}
             </AnimatePresence>
           </main>
 
@@ -494,11 +518,26 @@ export default function App() {
             onToggleDarkMode={toggleDarkMode}
           />
 
+          {/* AI Tutor Floating Panel & Drawer */}
+          <AITutor
+            isOpen={isAITutorOpen}
+            onClose={() => setIsAITutorOpen(false)}
+            onToggle={() => setIsAITutorOpen((prev) => !prev)}
+            currentAdjective={activeAdjectiveForModal}
+            onOpenDetails={(idx) => setModalIndex(idx)}
+            onToast={triggerToast}
+            isDarkMode={isDarkMode}
+          />
+
           {/* Adjective Details Modal Dialog */}
           <AdjectiveModal
             adjective={activeAdjectiveForModal}
             index={modalIndex}
             onClose={() => setModalIndex(null)}
+            onAskAITutor={(_adj) => {
+              setModalIndex(null);
+              setIsAITutorOpen(true);
+            }}
             isDarkMode={isDarkMode}
           />
         </div>

@@ -1,7 +1,22 @@
 {
-  "name": "react-example",
+  "name": "adjective-learning-platform",
+  "version": "1.0.0",
+  "description": "Interactive English-Bengali Adjective Learning & Quiz Platform featuring 1,260 curated vocabulary words, 3D flashcards, Web Speech voice search, audio pronunciation, timed quizzes, milestone badges, and a Gemini AI Tutor.",
   "private": true,
-  "version": "0.0.0",
+  "license": "MIT",
+  "keywords": [
+    "english-learning",
+    "bengali",
+    "adjectives",
+    "vocabulary",
+    "quiz-app",
+    "flashcards",
+    "web-speech-api",
+    "gemini-ai",
+    "react",
+    "typescript",
+    "tailwindcss"
+  ],
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
